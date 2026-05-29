@@ -199,9 +199,9 @@ app.get("/", (req, res) => {
     writeData(activityLogsFile, activityLogs);
 
     // Telegram Alert
-    // sendTelegramMessage(
-    //     `User Accessed Website\nName: ${name}\nIP: ${ipAddress}`
-    // );
+    sendTelegramMessage(
+        `User Accessed Website\nName: ${name}\nIP: ${ipAddress}`
+    );
 
     res.json({
         success: true,
@@ -271,9 +271,9 @@ if (ipAlreadyUsed && ipAlreadyUsed.name !== name) {
 
         writeData(requestUsersFile, requestUsers);
 
-        // sendTelegramMessage(
-        //   `New Access Request\nName: ${name}\nIP: ${ipAddress}`
-        // );
+        sendTelegramMessage(
+          `New Access Request\nName: ${name}\nIP: ${ipAddress}`
+        );
 
         return res.json({
             success: true,
@@ -294,9 +294,9 @@ if (ipAlreadyUsed && ipAlreadyUsed.name !== name) {
         existingUser.ipAddress.push(ipAddress);
     }
 
-    //   sendTelegramMessage(
-    //     `New IP Request\nName: ${name}\nIP: ${ipAddress}`
-    //   );
+      sendTelegramMessage(
+        `New IP Request\nName: ${name}\nIP: ${ipAddress}`
+      );
 
     res.json({
         success: true,
@@ -405,9 +405,9 @@ app.post("/admin/allow", (req, res) => {
   // TELEGRAM MESSAGE
   // ==============================
 
-//   sendTelegramMessage(
-//     `Admin Allowed User\nName: ${name}\nIP: ${ipAddress}`
-//   );
+  sendTelegramMessage(
+    `Admin Allowed User\nName: ${name}\nIP: ${ipAddress}`
+  );
 
   // ==============================
   // RESPONSE
@@ -445,9 +445,9 @@ app.post("/admin/reject", (req, res) => {
     // ADD THIS LINE: Save the updated array back to the text file
     writeData(requestUsersFile, requestUsers);
 
-      // sendTelegramMessage(
-      //   `Admin Rejected User\nName: ${name}\nIP: ${ipAddress}`
-      // );
+      sendTelegramMessage(
+        `Admin Rejected User\nName: ${name}\nIP: ${ipAddress}`
+      );
 
     res.json({
         success: true,
@@ -468,9 +468,9 @@ app.post("/admin/block-ip", (req, res) => {
         writeData(blockedIPsFile, blockedIPs);
     }
 
-      // sendTelegramMessage(
-      //   `Blocked IP Permanently\nIP: ${ipAddress}`
-      // );
+      sendTelegramMessage(
+        `Blocked IP Permanently\nIP: ${ipAddress}`
+      );
 
     res.json({
         success: true,
@@ -508,9 +508,9 @@ app.post("/logout", (req, res) => {
 
     userLog.totalTimeInSeconds = totalTime;
     writeData(activityLogsFile, activityLogs);
-      // sendTelegramMessage(
-      //   `User Logout\nName: ${name}\nTime Spent: ${totalTime} sec`
-      // );
+      sendTelegramMessage(
+        `User Logout\nName: ${name}\nTime Spent: ${totalTime} sec`
+      );
 
     res.json({
         success: true,
