@@ -423,7 +423,7 @@ app.post("/admin/allow", (req, res) => {
 // ADMIN REJECT USER
 // ==============================
 
-app.post("/admin/rejec", (req, res) => {
+app.post("/admin/reject", (req, res) => {
     const { name, ipAddress } = req.body;
 
     const index = requestUsers.findIndex(
@@ -534,6 +534,8 @@ app.get("/admin/logs", (req, res) => {
 // SERVER
 // ==============================
 
-app.listen(3000,() => {
-  console.log("Server running on PORT 3000");
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
+  console.log(`Server running on PORT ${PORT}`);
 });
