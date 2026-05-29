@@ -199,9 +199,9 @@ app.get("/", (req, res) => {
     writeData(activityLogsFile, activityLogs);
 
     // Telegram Alert
-    sendTelegramMessage(
-        `User Accessed Website\nName: ${name}\nIP: ${ipAddress}`
-    );
+    // sendTelegramMessage(
+    //     `User Accessed Website\nName: ${name}\nIP: ${ipAddress}`
+    // );
 
     res.json({
         success: true,
@@ -271,9 +271,9 @@ if (ipAlreadyUsed && ipAlreadyUsed.name !== name) {
 
         writeData(requestUsersFile, requestUsers);
 
-        sendTelegramMessage(
-          `New Access Request\nName: ${name}\nIP: ${ipAddress}`
-        );
+        // sendTelegramMessage(
+        //   `New Access Request\nName: ${name}\nIP: ${ipAddress}`
+        // );
 
         return res.json({
             success: true,
@@ -445,9 +445,9 @@ app.post("/admin/reject", (req, res) => {
     // ADD THIS LINE: Save the updated array back to the text file
     writeData(requestUsersFile, requestUsers);
 
-      sendTelegramMessage(
-        `Admin Rejected User\nName: ${name}\nIP: ${ipAddress}`
-      );
+      // sendTelegramMessage(
+      //   `Admin Rejected User\nName: ${name}\nIP: ${ipAddress}`
+      // );
 
     res.json({
         success: true,
@@ -468,9 +468,9 @@ app.post("/admin/block-ip", (req, res) => {
         writeData(blockedIPsFile, blockedIPs);
     }
 
-      sendTelegramMessage(
-        `Blocked IP Permanently\nIP: ${ipAddress}`
-      );
+      // sendTelegramMessage(
+      //   `Blocked IP Permanently\nIP: ${ipAddress}`
+      // );
 
     res.json({
         success: true,
@@ -508,9 +508,9 @@ app.post("/logout", (req, res) => {
 
     userLog.totalTimeInSeconds = totalTime;
     writeData(activityLogsFile, activityLogs);
-      sendTelegramMessage(
-        `User Logout\nName: ${name}\nTime Spent: ${totalTime} sec`
-      );
+      // sendTelegramMessage(
+      //   `User Logout\nName: ${name}\nTime Spent: ${totalTime} sec`
+      // );
 
     res.json({
         success: true,
@@ -534,7 +534,7 @@ app.get("/admin/logs", (req, res) => {
 // SERVER
 // ==============================
 
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
   console.log(`Server running on PORT ${PORT}`);
