@@ -423,7 +423,7 @@ app.post("/admin/allow", (req, res) => {
 // ADMIN REJECT USER
 // ==============================
 
-app.post("/admin/reject", (req, res) => {
+app.post("/admin/rejec", (req, res) => {
     const { name, ipAddress } = req.body;
 
     const index = requestUsers.findIndex(
