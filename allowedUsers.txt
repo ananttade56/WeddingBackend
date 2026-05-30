@@ -1,13 +1,10 @@
 [
   {
-    "name": "anantade56",
-    "ipAddress": [
-      ""
-    ]
-  },
-  {
     "name": "Anant",
-    "ipAddress": [
+    "fingerprints": [
+      "7244c8a0f82d590aaa9452f158692a2b"
+    ],
+    "ips": [
       "::1"
     ]
   }

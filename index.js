@@ -3,539 +3,308 @@
 // ==============================
 const express = require("express");
 const app = express();
-
 const cors = require("cors");
+const fs = require("fs");
+const path = require("path");
+const axios = require("axios");
 
 app.use(cors());
-
 app.use(express.json());
 
 // ==============================
 // DYNAMIC DATABASE (TEMP MEMORY)
 // ==============================
-
-// Dynamic Data From TXT Files
-
-// ==============================
-// FILE SYSTEM
-// ==============================
-
-const fs = require("fs");
-const path = require("path");
-
-// ==============================
-// FILE PATHS
-// ==============================
-
-const allowedUsersFile = path.join(
-    __dirname,
-    "allowedUsers.txt"
-);
-
-const requestUsersFile = path.join(
-    __dirname,
-    "requestUsers.txt"
-);
-
-const blockedIPsFile = path.join(
-    __dirname,
-    "blockedIPs.txt"
-);
-
-const activityLogsFile = path.join(
-    __dirname,
-    "activityLogs.txt"
-);
-
-// ==============================
-// CREATE FILE IF NOT EXISTS
-// ==============================
+const allowedUsersFile = path.join(__dirname, "allowedUsers.txt");
+const requestUsersFile = path.join(__dirname, "requestUsers.txt");
+const blockedFingerprintsFile = path.join(__dirname, "blockedFingerprints.txt");
+const activityLogsFile = path.join(__dirname, "activityLogs.txt");
 
 const createFileIfNotExists = (filePath, defaultData) => {
     if (!fs.existsSync(filePath)) {
-        fs.writeFileSync(
-            filePath,
-            JSON.stringify(defaultData, null, 2)
-        );
+        fs.writeFileSync(filePath, JSON.stringify(defaultData, null, 2));
     }
 };
 
 createFileIfNotExists(allowedUsersFile, []);
 createFileIfNotExists(requestUsersFile, []);
-createFileIfNotExists(blockedIPsFile, []);
+createFileIfNotExists(blockedFingerprintsFile, []);
 createFileIfNotExists(activityLogsFile, []);
 
-// ==============================
-// READ DATA FUNCTION
-// ==============================
-
-const readData = (filePath) => {
-    const data = fs.readFileSync(filePath, "utf-8");
-
-    return JSON.parse(data);
-};
-
-// ==============================
-// WRITE DATA FUNCTION
-// ==============================
-
-const writeData = (filePath, data) => {
-    fs.writeFileSync(
-        filePath,
-        JSON.stringify(data, null, 2)
-    );
-};
+const readData = (filePath) => JSON.parse(fs.readFileSync(filePath, "utf-8"));
+const writeData = (filePath, data) => fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
 
 let allowedUsers = readData(allowedUsersFile);
-
 let requestUsers = readData(requestUsersFile);
-
-let blockedIPs = readData(blockedIPsFile);
-
+let blockedFingerprints = readData(blockedFingerprintsFile);
 let activityLogs = readData(activityLogsFile);
 
 // ==============================
-// HELPER FUNCTION
+// HELPER FUNCTIONS
 // ==============================
-
-// Get User IP
 const getUserIP = (req) => {
-    return (
-        req.headers["x-forwarded-for"] ||
-        req.socket.remoteAddress ||
-        req.ip
-    );
+    return req.headers["x-forwarded-for"] || req.socket.remoteAddress || req.ip;
 };
 
 // ==============================
 // TELEGRAM FUNCTION
 // ==============================
-
-// Install axios first
-// npm install axios
-
-const axios = require("axios");
-
 const BOT_TOKEN = "8639044397:AAFNUN4hXXAXJRMae-brZQhptCfCvLoDXVU";
 const CHAT_ID = "682640171";
 
 async function sendTelegramMessage(message) {
-  try {
-    const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
-
-    await axios.post(url, {
-      chat_id: CHAT_ID,
-      text: message,
-    });
-
-    console.log("Telegram Message Sent");
-  } catch (error) {
-    console.log("Telegram Error", error.message);
-  }
+    try {
+        const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
+        await axios.post(url, { chat_id: CHAT_ID, text: message });
+        console.log("Telegram Message Sent");
+    } catch (error) {
+        console.log("Telegram Error", error.message);
+    }
 }
 
 // ==============================
-// ROOT API
+// ROOT API (Login/Access Check)
 // ==============================
-
 app.get("/", (req, res) => {
     const ipAddress = getUserIP(req);
     const name = req.query.name;
+    const visitorId = req.query.visitorId;
 
-    // Check blocked IP
-    if (blockedIPs.includes(ipAddress)) {
-        return res.status(403).json({
-            success: false,
-            message: "Your IP is permanently blocked by admin",
-        });
+    if (!visitorId) {
+        return res.status(400).json({ success: false, message: "Device fingerprint missing" });
     }
 
-    // ==============================
-    // ADMIN CHECK (Bypass normal flow)
-    // ==============================
+    if (blockedFingerprints.includes(visitorId)) {
+        return res.status(403).json({ success: false, message: "Your device is permanently blocked" });
+    }
+
+    // ADMIN CHECK
     if (name === "anantade56") {
-        // Optional: Still store activity log for the admin
-        activityLogs.push({
-            name: "Admin (anantade56)",
-            ipAddress,
-            loginTime: new Date(),
-        });
+        activityLogs.push({ name: "Admin (anantade56)", ipAddress, visitorId, loginTime: new Date() });
         writeData(activityLogsFile, activityLogs);
-
-        // Send special admin flag to the frontend
-        return res.json({
-            success: true,
-            message: "Welcome Admin",
-            isAdmin: true 
-        });
+        return res.json({ success: true, message: "Welcome Admin", isAdmin: true });
     }
 
-    // ==============================
-    // NORMAL USER CHECK
-    // ==============================
-    
-    // Find User
-    const user = allowedUsers.find(
-        (item) =>
-            item.name === name &&
-            item.ipAddress.includes(ipAddress)
-    );
+    // NORMAL USER CHECK (Strictly by Visitor ID)
+    const user = allowedUsers.find((item) => {
+        // Check if the user exists and if their fingerprints array includes this device
+        return item.name === name && Array.isArray(item.fingerprints) && item.fingerprints.includes(visitorId);
+    });
 
-    // If user not allowed
     if (!user) {
         return res.status(401).json({
             success: false,
-            message: "Access Denied. Your name or IP Address is not allowed.",
+            message: "Access Denied. Your device is not registered.",
         });
     }
 
-    // Store activity log
-    activityLogs.push({
-        name,
-        ipAddress,
-        loginTime: new Date(),
-    });
+    // Tracking: Save the IP address to the user's file (but don't use it for login)
+    if (!Array.isArray(user.ips)) user.ips = [];
+    if (!user.ips.includes(ipAddress)) {
+        user.ips.push(ipAddress);
+        writeData(allowedUsersFile, allowedUsers); // Update txt file with new IP
+    }
 
+    // Store activity log
+    activityLogs.push({ name, ipAddress, visitorId, loginTime: new Date() });
     writeData(activityLogsFile, activityLogs);
 
-    // Telegram Alert
-    sendTelegramMessage(
-        `User Accessed Website\nName: ${name}\nIP: ${ipAddress}`
-    );
+    sendTelegramMessage(`User Accessed Website\nName: ${name}\nDevice ID: ${visitorId}\nIP: ${ipAddress}`);
 
-    res.json({
-        success: true,
-        message: "Welcome to Website",
-        isAdmin: false // Explicitly state they are not admin
-    });
+    res.json({ success: true, message: "Welcome to Website", isAdmin: false });
 });
 
 // ==============================
 // REQUEST ACCESS API
 // ==============================
-
 app.post("/request/user", (req, res) => {
-    const { name } = req.body;
+    const { name, visitorId } = req.body;
     const ipAddress = getUserIP(req);
 
-// ==============================
-// CHECK IP ALREADY USED
-// ==============================
+    if (!visitorId) return res.status(400).json({ success: false, message: "Device fingerprint missing" });
 
-const ipAlreadyUsed = allowedUsers.find((user) =>
-  user.ipAddress.includes(ipAddress)
-);
-
-// If IP belongs to another user
-if (ipAlreadyUsed && ipAlreadyUsed.name !== name) {
-  return res.status(400).json({
-    success: false,
-    message: `This IP Address already belongs to ${ipAlreadyUsed.name}`,
-  });
-}
-
-    // Check blocked IP
-    if (blockedIPs.includes(ipAddress)) {
-        return res.status(403).json({
-            success: false,
-            message: "Your IP is blocked permanently",
-        });
+    // Prevent device sharing
+    const deviceAlreadyUsed = allowedUsers.find(
+        (user) => Array.isArray(user.fingerprints) && user.fingerprints.includes(visitorId)
+    );
+    if (deviceAlreadyUsed && deviceAlreadyUsed.name !== name) {
+        return res.status(400).json({ success: false, message: `This Device already belongs to ${deviceAlreadyUsed.name}` });
     }
 
-    // Check already allowed
-    const alreadyAllowed = allowedUsers.find(
-        (item) =>
-            item.name === name &&
-            item.ipAddress.includes(ipAddress)
-    );
-
-    if (alreadyAllowed) {
-        return res.json({
-            success: true,
-            message: "You already have access",
-        });
+    if (blockedFingerprints.includes(visitorId)) {
+        return res.status(403).json({ success: false, message: "Your device is blocked permanently" });
     }
 
-    // Find Existing Request User
-    let existingUser = requestUsers.find(
-        (item) => item.name === name
-    );
+    let existingUser = requestUsers.find((item) => item.name === name);
 
     // First time user
     if (!existingUser) {
         requestUsers.push({
             name,
-            ipAddress: [ipAddress],
+            fingerprints: [visitorId],
+            ips: [ipAddress], // Store IP for tracking
             status: "PENDING",
         });
-
         writeData(requestUsersFile, requestUsers);
-
-        sendTelegramMessage(
-          `New Access Request\nName: ${name}\nIP: ${ipAddress}`
-        );
-
-        return res.json({
-            success: true,
-            message: "Access request sent to admin",
-        });
+        sendTelegramMessage(`New Access Request\nName: ${name}\nDevice ID: ${visitorId}\nIP: ${ipAddress}`);
+        return res.json({ success: true, message: "Access request sent to admin" });
     }
 
-    // Maximum 2 IPs allowed
-    if (existingUser.ipAddress.length >= 2) {
-        return res.status(400).json({
-            success: false,
-            message: "Maximum 2 IP Addresses allowed",
-        });
+    // Fix arrays if legacy data exists
+    if (!Array.isArray(existingUser.fingerprints)) existingUser.fingerprints = [];
+    if (!Array.isArray(existingUser.ips)) existingUser.ips = [];
+
+    // Max 2 Devices Check
+    if (existingUser.fingerprints.length >= 2 && !existingUser.fingerprints.includes(visitorId)) {
+        return res.status(400).json({ success: false, message: "Maximum 2 Devices allowed" });
     }
 
-    // Add new IP if not exists
-    if (!existingUser.ipAddress.includes(ipAddress)) {
-        existingUser.ipAddress.push(ipAddress);
-    }
+    // Add new Device & IP
+    if (!existingUser.fingerprints.includes(visitorId)) existingUser.fingerprints.push(visitorId);
+    if (!existingUser.ips.includes(ipAddress)) existingUser.ips.push(ipAddress);
+    
+    writeData(requestUsersFile, requestUsers);
+    sendTelegramMessage(`New Device Request\nName: ${name}\nDevice ID: ${visitorId}\nIP: ${ipAddress}`);
 
-      sendTelegramMessage(
-        `New IP Request\nName: ${name}\nIP: ${ipAddress}`
-      );
+    res.json({ success: true, message: "New device request sent to admin" });
+});
 
-    res.json({
-        success: true,
-        message: "New IP request sent to admin",
-    });
+// ==============================
+// ADMIN VIEW PENDING REQUESTS
+// ==============================
+app.get("/admin/requests", (req, res) => {
+    res.json({ success: true, data: requestUsers });
 });
 
 // ==============================
 // ADMIN ALLOW USER
 // ==============================
 
-// ==============================
-// ADMIN VIEW PENDING REQUESTS
-// ==============================
-app.get("/admin/requests", (req, res) => {
-    // Send the pending requestUsers array to the frontend
-    res.json({
-        success: true,
-        data: requestUsers,
-    });
-});
 app.post("/admin/allow", (req, res) => {
-  const { name, ipAddress } = req.body;
+    const { name, visitorId } = req.body;
 
-  // ==============================
-  // CHECK IP ALREADY USED
-  // ==============================
+    // Find the request to extract the IP address associated with this device
+    const requestUser = requestUsers.find(
+        (item) => item.name === name && Array.isArray(item.fingerprints) && item.fingerprints.includes(visitorId)
+    );
 
-  const ipAlreadyUsed = allowedUsers.find((user) =>
-    user.ipAddress.includes(ipAddress)
-  );
-
-  // If IP already belongs to another user
-  if (ipAlreadyUsed && ipAlreadyUsed.name !== name) {
-    return res.status(400).json({
-      success: false,
-      message: `This IP Address is already assigned to ${ipAlreadyUsed.name}`,
-    });
-  }
-
-  // ==============================
-  // FIND REQUEST USER
-  // ==============================
-
-  const requestUser = requestUsers.find(
-    (item) =>
-      item.name === name &&
-      item.ipAddress.includes(ipAddress)
-  );
-
-  if (!requestUser) {
-    return res.status(404).json({
-      success: false,
-      message: "User request not found",
-    });
-  }
-
-  // ==============================
-  // FIND ALLOWED USER
-  // ==============================
-
-  let allowedUser = allowedUsers.find(
-    (item) => item.name === name
-  );
-
-  // New User
-  if (!allowedUser) {
-    allowedUsers.push({
-      name,
-      ipAddress: [ipAddress],
-    });
-
-    writeData(allowedUsersFile, allowedUsers);
-  } else {
-    // Max 2 IPs
-    if (allowedUser.ipAddress.length >= 2) {
-      return res.status(400).json({
-        success: false,
-        message: "Maximum 2 IP Addresses allowed",
-      });
+    if (!requestUser) {
+        return res.status(404).json({ success: false, message: "User device request not found" });
     }
 
-    // Add IP if not exists
-    if (!allowedUser.ipAddress.includes(ipAddress)) {
-      allowedUser.ipAddress.push(ipAddress);
+    let allowedUser = allowedUsers.find((item) => item.name === name);
 
-      writeData(allowedUsersFile, allowedUsers);
+    // Get the IP from the request (default to unknown if missing)
+    const trackedIp = Array.isArray(requestUser.ips) ? requestUser.ips[0] : "Unknown";
+
+    // New User Approval
+    if (!allowedUser) {
+        allowedUsers.push({ 
+            name, 
+            fingerprints: [visitorId],
+            ips: [trackedIp] // Save IP for tracking
+        });
+        writeData(allowedUsersFile, allowedUsers);
+    } else {
+        // Fix legacy arrays
+        if (!Array.isArray(allowedUser.fingerprints)) allowedUser.fingerprints = [];
+        if (!Array.isArray(allowedUser.ips)) allowedUser.ips = [];
+
+        // Max 2 Devices
+        if (allowedUser.fingerprints.length >= 2 && !allowedUser.fingerprints.includes(visitorId)) {
+            return res.status(400).json({ success: false, message: "Maximum 2 Devices allowed" });
+        }
+
+        // Add ID and IP to existing user
+        if (!allowedUser.fingerprints.includes(visitorId)) allowedUser.fingerprints.push(visitorId);
+        if (!allowedUser.ips.includes(trackedIp)) allowedUser.ips.push(trackedIp);
+        
+        writeData(allowedUsersFile, allowedUsers);
     }
-  }
 
-  // ==============================
-  // REMOVE FROM REQUEST LIST
-  // ==============================
+    // Remove from request list
+    requestUsers = requestUsers.filter(
+        (item) => !(item.name === name && item.fingerprints.includes(visitorId))
+    );
+    writeData(requestUsersFile, requestUsers);
 
-  requestUsers = requestUsers.filter(
-    (item) =>
-      !(
-        item.name === name &&
-        item.ipAddress.includes(ipAddress)
-      )
-  );
+    sendTelegramMessage(`Admin Allowed User\nName: ${name}\nDevice ID: ${visitorId}`);
 
-  writeData(requestUsersFile, requestUsers);
-
-  // ==============================
-  // TELEGRAM MESSAGE
-  // ==============================
-
-  sendTelegramMessage(
-    `Admin Allowed User\nName: ${name}\nIP: ${ipAddress}`
-  );
-
-  // ==============================
-  // RESPONSE
-  // ==============================
-
-  res.json({
-    success: true,
-    message: "User Allowed Successfully",
-  });
+    res.json({ success: true, message: "User Allowed Successfully" });
 });
 
 // ==============================
 // ADMIN REJECT USER
 // ==============================
-
 app.post("/admin/reject", (req, res) => {
-    const { name, ipAddress } = req.body;
+    const { name, visitorId } = req.body;
 
     const index = requestUsers.findIndex(
-        (item) =>
-            item.name === name &&
-            item.ipAddress.includes(ipAddress)
+        (item) => item.name === name && item.fingerprints.includes(visitorId)
     );
 
     if (index === -1) {
-        return res.status(404).json({
-            success: false,
-            message: "Request not found",
-        });
+        return res.status(404).json({ success: false, message: "Request not found" });
     }
 
-    // Removes the user from the array
     requestUsers.splice(index, 1);
-
-    // ADD THIS LINE: Save the updated array back to the text file
     writeData(requestUsersFile, requestUsers);
 
-      sendTelegramMessage(
-        `Admin Rejected User\nName: ${name}\nIP: ${ipAddress}`
-      );
+    sendTelegramMessage(`Admin Rejected User\nName: ${name}\nDevice ID: ${visitorId}`);
 
-    res.json({
-        success: true,
-        message: "User Rejected",
-    });
+    res.json({ success: true, message: "User Rejected" });
 });
 
 // ==============================
-// BLOCK IP PERMANENTLY
+// BLOCK DEVICE PERMANENTLY
 // ==============================
+app.post("/admin/block-device", (req, res) => {
+    const { visitorId } = req.body;
 
-app.post("/admin/block-ip", (req, res) => {
-    const { ipAddress } = req.body;
-
-    if (!blockedIPs.includes(ipAddress)) {
-        blockedIPs.push(ipAddress);
-
-        writeData(blockedIPsFile, blockedIPs);
+    if (!blockedFingerprints.includes(visitorId)) {
+        blockedFingerprints.push(visitorId);
+        writeData(blockedFingerprintsFile, blockedFingerprints);
     }
 
-      sendTelegramMessage(
-        `Blocked IP Permanently\nIP: ${ipAddress}`
-      );
+    sendTelegramMessage(`Blocked Device Permanently\nDevice ID: ${visitorId}`);
 
-    res.json({
-        success: true,
-        message: "IP Blocked Successfully",
-    });
+    res.json({ success: true, message: "Device Blocked Successfully" });
 });
 
 // ==============================
 // USER LOGOUT / TRACK TIME
 // ==============================
-
 app.post("/logout", (req, res) => {
-    const { name } = req.body;
-    const ipAddress = getUserIP(req);
+    const { name, visitorId } = req.body;
 
     const userLog = activityLogs.find(
-        (item) =>
-            item.name === name &&
-            item.ipAddress === ipAddress &&
-            !item.logoutTime
+        (item) => item.name === name && item.visitorId === visitorId && !item.logoutTime
     );
 
     if (!userLog) {
-        return res.status(404).json({
-            success: false,
-            message: "User activity not found",
-        });
+        return res.status(404).json({ success: false, message: "User activity not found" });
     }
 
     userLog.logoutTime = new Date();
-
-    // Calculate total time
-    const totalTime =
-        (userLog.logoutTime - userLog.loginTime) / 1000;
-
+    const totalTime = (userLog.logoutTime - new Date(userLog.loginTime)) / 1000;
     userLog.totalTimeInSeconds = totalTime;
+    
     writeData(activityLogsFile, activityLogs);
-      sendTelegramMessage(
-        `User Logout\nName: ${name}\nTime Spent: ${totalTime} sec`
-      );
+    sendTelegramMessage(`User Logout\nName: ${name}\nTime Spent: ${totalTime} sec`);
 
-    res.json({
-        success: true,
-        message: "Logout Successful",
-        totalTimeInSeconds: totalTime,
-    });
+    res.json({ success: true, message: "Logout Successful", totalTimeInSeconds: totalTime });
 });
 
 // ==============================
 // ADMIN VIEW LOGS
 // ==============================
-
 app.get("/admin/logs", (req, res) => {
-    res.json({
-        success: true,
-        data: activityLogs,
-    });
+    res.json({ success: true, data: activityLogs });
 });
 
 // ==============================
 // SERVER
 // ==============================
-
 const PORT = process.env.PORT || 3000;
-
 app.listen(PORT, () => {
-  console.log(`Server running on PORT ${PORT}`);
+    console.log(`Server running on PORT ${PORT}`);
 });

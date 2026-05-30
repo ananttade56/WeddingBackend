@@ -1,97 +1,26 @@
 [
   {
-    "name": "Anant",
+    "name": "Admin (anantade56)",
     "ipAddress": "::1",
-    "loginTime": "2026-05-23T11:01:10.695Z"
+    "visitorId": "7244c8a0f82d590aaa9452f158692a2b",
+    "loginTime": "2026-05-30T05:36:42.611Z"
   },
   {
-    "name": "Anant",
+    "name": "Admin (anantade56)",
     "ipAddress": "::1",
-    "loginTime": "2026-05-23T11:12:20.546Z"
-  },
-  {
-    "name": "Anant",
-    "ipAddress": "::1",
-    "loginTime": "2026-05-23T11:33:01.597Z"
+    "visitorId": "7244c8a0f82d590aaa9452f158692a2b",
+    "loginTime": "2026-05-30T05:36:57.995Z"
   },
   {
     "name": "Anant",
     "ipAddress": "::1",
-    "loginTime": "2026-05-28T11:29:49.572Z"
-  },
-  {
-    "name": "Anant",
-    "ipAddress": "::1",
-    "loginTime": "2026-05-28T11:47:20.519Z"
-  },
-  {
-    "name": "anantade56",
-    "ipAddress": "::1",
-    "loginTime": "2026-05-28T12:06:21.527Z"
-  },
-  {
-    "name": "anantade56",
-    "ipAddress": "::1",
-    "loginTime": "2026-05-28T12:07:32.329Z"
-  },
-  {
-    "name": "anantade56",
-    "ipAddress": "::1",
-    "loginTime": "2026-05-28T12:09:05.170Z"
+    "visitorId": "7244c8a0f82d590aaa9452f158692a2b",
+    "loginTime": "2026-05-30T05:37:14.576Z"
   },
   {
     "name": "Admin (anantade56)",
     "ipAddress": "::1",
-    "loginTime": "2026-05-28T12:15:34.076Z"
-  },
-  {
-    "name": "Admin (anantade56)",
-    "ipAddress": "::1",
-    "loginTime": "2026-05-28T12:19:21.545Z"
-  },
-  {
-    "name": "Admin (anantade56)",
-    "ipAddress": "::1",
-    "loginTime": "2026-05-28T12:22:31.664Z"
-  },
-  {
-    "name": "Admin (anantade56)",
-    "ipAddress": "::1",
-    "loginTime": "2026-05-28T12:26:19.797Z"
-  },
-  {
-    "name": "Admin (anantade56)",
-    "ipAddress": "::1",
-    "loginTime": "2026-05-28T13:34:40.203Z"
-  },
-  {
-    "name": "Admin (anantade56)",
-    "ipAddress": "::1",
-    "loginTime": "2026-05-28T13:40:40.825Z"
-  },
-  {
-    "name": "Admin (anantade56)",
-    "ipAddress": "::1",
-    "loginTime": "2026-05-28T13:42:07.458Z"
-  },
-  {
-    "name": "Anant",
-    "ipAddress": "::1",
-    "loginTime": "2026-05-28T13:53:10.544Z"
-  },
-  {
-    "name": "Admin (anantade56)",
-    "ipAddress": "::1",
-    "loginTime": "2026-05-29T05:55:06.557Z"
-  },
-  {
-    "name": "Anant",
-    "ipAddress": "::1",
-    "loginTime": "2026-05-29T08:31:46.727Z"
-  },
-  {
-    "name": "Admin (anantade56)",
-    "ipAddress": "::1",
-    "loginTime": "2026-05-29T08:33:17.310Z"
+    "visitorId": "7244c8a0f82d590aaa9452f158692a2b",
+    "loginTime": "2026-05-30T06:07:57.387Z"
   }
 ]
